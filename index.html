@@ -112,7 +112,7 @@
         .card.not-started { border-left-color: #9e9e9e; }
         .card.oee { border-left-color: #9c27b0; }
         
-        /* 环境监控卡片 */
+        /* 环境监控卡片 - 字体增大优化 */
         .environment-cards {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -144,21 +144,33 @@
             border-top-color: #ff9800;
         }
         
+        /* 增大了环境监控卡片标题字体 */
         .env-card-title {
-            font-size: 13px;
+            font-size: 16px; /* 从13px增大到16px */
             color: #81d4fa;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
+            font-weight: bold;
         }
         
+        /* 增大了环境监控卡片数值字体 */
         .env-card-value {
-            font-size: 24px;
+            font-size: 32px; /* 从24px增大到32px */
             font-weight: bold;
-            margin-bottom: 5px;
+            margin-bottom: 8px;
         }
         
         .env-card-unit {
-            font-size: 12px;
+            font-size: 14px; /* 从12px增大到14px */
             color: #9e9e9e;
+            margin-bottom: 8px;
+        }
+        
+        /* 新增：单位解释 */
+        .unit-explanation {
+            font-size: 11px;
+            color: #78909c;
+            margin-top: 5px;
+            font-style: italic;
         }
         
         /* 主看板区域 */
@@ -571,6 +583,15 @@
             .control-panel {
                 flex-direction: column;
             }
+            
+            /* 移动端环境卡片字体微调 */
+            .env-card-title {
+                font-size: 15px;
+            }
+            
+            .env-card-value {
+                font-size: 28px;
+            }
         }
         
         /* 全屏模式下的特殊调整 */
@@ -687,7 +708,7 @@
             </div>
         </div>
         
-        <!-- 环境监控卡片 -->
+        <!-- 环境监控卡片 - 字体已增大 -->
         <div class="environment-cards">
             <div class="env-card temperature">
                 <div class="env-card-title">车间温度</div>
@@ -703,9 +724,10 @@
                 <div class="env-card-title">车间湿度</div>
                 <div class="env-card-value" id="workshopHumidity">58</div>
                 <div class="env-card-unit">%RH</div>
+                <div class="unit-explanation">相对湿度(Relative Humidity)</div>
                 <div class="humidity-indicator">
                     <span class="humidity-icon">💧</span>
-                    <span style="font-size: 12px;">正常范围: 55-65%</span>
+                    <span style="font-size: 12px;">正常范围: 55-65%RH</span>
                 </div>
             </div>
             
@@ -1272,6 +1294,16 @@
         let productionCompleted = false; // 标记是否所有生产已完成
         let isFullscreen = false; // 标记是否全屏
         
+        // 格式化数字函数 - 统一控制小数点位数
+        function formatNumber(value, decimals = 1) {
+            return parseFloat(value).toFixed(decimals);
+        }
+        
+        // 格式化百分比函数
+        function formatPercent(value, decimals = 1) {
+            return parseFloat(value).toFixed(decimals) + "%";
+        }
+        
         // 更新当前时间
         function updateCurrentTime() {
             const now = new Date();
@@ -1414,7 +1446,7 @@
             
             // 模拟计算OEE
             const oeeValue = 85 + Math.random() * 6; // 模拟85-91%之间的OEE
-            document.getElementById('oeeValue').textContent = oeeValue.toFixed(1) + "%";
+            document.getElementById('oeeValue').textContent = formatPercent(oeeValue, 1);
             
             // 更新产品完成数量
             document.getElementById('product1Completed').textContent = product1Completed.toLocaleString() + " " + products.product1.unit;
@@ -1480,12 +1512,12 @@
             environmentData.airQuality = qualityLevels[Math.floor(Math.random() * 2)]; // 只取优或良
             environmentData.pm25 = Math.floor(Math.random() * 10) + 10;
             
-            // 更新DOM
-            document.getElementById('workshopTemp').textContent = environmentData.workshopTemp.toFixed(1);
+            // 更新DOM - 使用统一的格式化函数
+            document.getElementById('workshopTemp').textContent = formatNumber(environmentData.workshopTemp, 1);
             document.getElementById('workshopHumidity').textContent = Math.round(environmentData.workshopHumidity);
             document.getElementById('airQuality').textContent = environmentData.airQuality;
             document.getElementById('airQuality').parentElement.querySelector('.env-card-unit').textContent = `PM2.5: ${environmentData.pm25}μg/m³`;
-            document.getElementById('energyConsumption').textContent = environmentData.energyConsumption.toFixed(1);
+            document.getElementById('energyConsumption').textContent = formatNumber(environmentData.energyConsumption, 1);
             document.getElementById('energyConsumption').parentElement.querySelector('.energy-indicator span:nth-child(2)').textContent = 
                 `今日累计: ${Math.round(environmentData.totalEnergyToday)} kW·h`;
         }
@@ -1519,9 +1551,15 @@
                     tempValueClass = "danger";
                 }
                 
-                // 根据设备类型确定温度单位
+                // 根据设备类型确定温度单位和显示精度
                 const tempUnit = equipment.type === "baking" ? "°C" : "°C";
-                const tempValue = equipment.type === "baking" ? equipment.temperature.toFixed(1) : equipment.temperature.toFixed(1);
+                // 修改小数点位数：环境温度显示1位小数，烘烤设备温度显示整数
+                const tempValue = equipment.type === "baking" ? 
+                    formatNumber(equipment.temperature, 0) : 
+                    formatNumber(equipment.temperature, 1);
+                
+                // 设备湿度显示为整数（去掉小数）
+                const humidityValue = Math.round(equipment.humidity);
                 
                 const equipmentItem = document.createElement('div');
                 equipmentItem.className = `equipment-item ${equipment.status}`;
@@ -1536,8 +1574,8 @@
                             <span class="detail-value ${tempValueClass}">${tempValue} ${tempUnit}</span>
                         </div>
                         <div class="equipment-detail">
-                            <span class="detail-label">环境湿度</span>
-                            <span class="detail-value">${equipment.humidity} %RH</span>
+                            <span class="detail-label">设备湿度</span>
+                            <span class="detail-value">${humidityValue} %RH</span>
                         </div>
                         <div class="equipment-detail">
                             <span class="detail-label">运行速度</span>
@@ -1545,11 +1583,11 @@
                         </div>
                         <div class="equipment-detail">
                             <span class="detail-label">实时功率</span>
-                            <span class="detail-value">${equipment.power} kW</span>
+                            <span class="detail-value">${formatNumber(equipment.power, 1)} kW</span>
                         </div>
                         <div class="equipment-detail">
                             <span class="detail-label">运行时长</span>
-                            <span class="detail-value">${equipment.runtime.toFixed(1)} 小时</span>
+                            <span class="detail-value">${formatNumber(equipment.runtime, 1)} 小时</span>
                         </div>
                     </div>
                 `;
